@@ -1,4 +1,6 @@
 import asyncio
+import threading
+from flask import Flask
 
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -10,13 +12,23 @@ from db import init_db
 from utils.logger import log
 from utils.gift_parser import start_gift_parsing_loop
 
-# Load configuration
+# Load config
 config = load_config()
 
 # Initialize bot
 bot = Bot(token=config["bot_token"])
 dp = Dispatcher(storage=MemoryStorage())
 
+# Создаем экземпляр Flask
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Бот работает!", 200
+
+def run_web_server():
+    # Запуск Flask сервера
+    app.run(host='0.0.0.0', port=8080)
 
 async def on_startup():
     """
@@ -29,7 +41,6 @@ async def on_startup():
     # Start parsing gifts
     log.info("Starting gift parsing loop...")
     asyncio.create_task(start_gift_parsing_loop())
-
 
 async def main():
     """
@@ -48,9 +59,11 @@ async def main():
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
-
 if __name__ == "__main__":
     try:
+        # Запускаем Flask в отдельном потоке
+        threading.Thread(target=run_web_server, daemon=True).start()
+        # Запускаем асинхронного бота
         asyncio.run(main())
     except Exception as e:
-        log.exception(f"Bot stopped due to an error: {e}")
+        log.exception(f"Бот остановился из-за ошибки: {e}")
