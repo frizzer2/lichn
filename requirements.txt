@@ -21,3 +21,4 @@ typing_extensions==4.12.2
 win32_setctime==1.2.0
 yarl==1.18.3
 sqlalchemy
+flask
